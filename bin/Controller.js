@@ -104,7 +104,7 @@ async setLogin(dat, res) {
                 { user_id: user._id },
                 config.llave,
                 {
-                  expiresIn: "60s",
+                  expiresIn: "120s",
                 }
               );
 
