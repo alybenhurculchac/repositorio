@@ -14,10 +14,9 @@ app.use(cors());
 
 app.use(bodyParser.json());
 
-app.post("/categorias",  function(req, res){
+app.post("/categorias", auth, function(req, res){
     var data = req.body;
-    console.log(data)
-    Controller.setCategoria(data, res);
+     Controller.setCategoria(data, res);
 });
 
 app.get("/categorias", function(req, res){
@@ -38,7 +37,7 @@ app.post("/categorias_recursos", auth, function(req, res){
 
 
 
-app.post("/categorias_subcategoria", function(req, res){
+app.post("/categorias_subcategoria", auth, function(req, res){
    var recurso = req.body;
    Controller.setSubcategoria(recurso, res);
 });
@@ -71,23 +70,24 @@ app.post("/changepassword", auth, function(req, res){
    Controller.setChangepassword(data, res);
 });
 
+/*
 app.post("/BuscaRecursoNombre", function(req, res){
    var data = req.body;
-   console.log(data)
    Controller.getRecursoNombre(data, res);
 });
+*/
 
-app.post("/deleteRecurso", function(req, res){
+app.post("/deleteRecurso", auth, function(req, res){
    var data = req.body;
    Controller.deleteRecurso(data, res);
 });
 
-app.post("/deleteSubcategoria", function(req, res){
+app.post("/deleteSubcategoria", auth, function(req, res){
    var data = req.body;
    Controller.deleteSubcategoria(data, res);
 });
 
-app.post("/deleteCategoria", function(req, res){
+app.post("/deleteCategoria", auth, function(req, res){
    var data = req.body;
    Controller.deleteCategoria(data, res);
 });
