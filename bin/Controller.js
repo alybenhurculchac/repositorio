@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require('uuid')
 const Categoria = require("../bin/models/Categoria");
+const Subcategoria = require("../bin/models/Subcategoria");
 const Usuarios = require("../bin/models/Usuarios");
 const bcrypt = require('bcryptjs')
 const jwt = require("jsonwebtoken");
@@ -33,28 +34,58 @@ class Controller{
         });
     }
 
-    getCategorias(res){
-        Categoria.find({}, function(err, categorias){
-            if(err) throw err;
+    async getCategorias(res){
+        await Categoria.find({})
+        .populate("subcategorias") 
+        .then(categorias => {
             res.send(categorias);
-        })
+         });
+         
     }
 
     setRecursos(recurso,res)
     {
         try{
-        const { _id, ...realRecurso } = recurso;
-        Categoria.findOneAndUpdate(
-            { _id: recurso._id }, 
+        const { _idc, _ids, ...realRecurso } = recurso;
+        console.log(recurso)
+         Subcategoria.findOneAndUpdate(
+            { _id: recurso._ids},
             { $push: { recursos: realRecurso  } },
            function (err, success) {
             if(err) throw err;
             res.send({nU : "Recurso creado con exito ..."});
              });
          }
-         catch (err) {
+        catch (err) {
             console.log(err);
          }
+
+    }
+
+    async setSubcategoria(subcategoria,res){
+        try{
+                       
+             const cate =   await Categoria.findById(subcategoria.cat);
+             if (cate){
+                Subcategoria.create(subcategoria, function(err, newsubcategoria){
+                    if(err) throw err;
+
+                    Categoria.findOneAndUpdate(
+                        { _id: subcategoria.cat }, 
+                        { $push: { subcategorias: newsubcategoria._id } },
+                        function (err, success) {
+                            if(err) throw err;
+                        })
+
+                    res.send({status: 200, nU: "Subcategoria  creada con exito ..."});
+                });
+
+             }
+            }
+            catch (err) {
+                console.log(err);
+             }
+    
 
     }
     
@@ -64,6 +95,25 @@ class Controller{
             res.send(categoria)
         })
     }
+
+    getSubcategoriaId(id,res){
+        Categoria.find({_id: id})
+        .populate("subcategorias") 
+        .then(categorias => {
+              res.send(categorias);
+         });
+    }
+
+
+
+    getSubcategoria(id,res){
+        Subcategoria.find({_id: id})
+        .then(subcategoria => {
+              res.send(subcategoria);
+         });
+    }
+
+
 
     async setUser(usu, res) {
         const { usuario, clave} = usu;
@@ -104,7 +154,7 @@ async setLogin(dat, res) {
                 { user_id: user._id },
                 config.llave,
                 {
-                  expiresIn: "120s",
+                  expiresIn: "2h",
                 }
               );
 
@@ -162,6 +212,77 @@ async setChangepassword(data, res){
     });
 }
  
+
+
+deleteSubcategoria(data, res){
+    var {id} = data;
+    Subcategoria.findOneAndDelete(
+        {"_id" : id},
+        function (error, doc) {
+            if (error) {
+                res.send({status: 400, nU: "Se produjo um error... "});
+            } else {
+                res.send({status: 200, nU: "Subcategoria borrada con exito ..."});
+            }
+        }
+
+    )
 }
+
+async deleteCategoria(data,res){
+    var {_id} = data;
+    var categorias = await Categoria.findOne({ _id });
+    
+    for(data of categorias.subcategorias){
+       await Categoria.updateOne({_id : _id}, {
+             $pullAll: {
+                subcategorias: [{_id: data._id}],
+            },
+        });
+     await Subcategoria.findOneAndDelete({"_id" : data._id}) 
+    }
+
+    await Categoria.findOneAndDelete({"_id" : _id}) 
+
+    res.send({status: 200, nU: "Borrada categoria exitosamente ..."});
+}
+
+async deleteRecurso(data,res){
+    var {ids, idr} = data;
+    console.log(ids,idr)
+    Subcategoria.findOne({_id: ids},
+       function (error, docs) {
+          
+          var {recursos} =  docs.recursos;
+           if (error) {
+              console.log(error)
+            }
+
+          for(data in docs.recursos){ 
+             if (docs.recursos[data]._id == idr)
+              {
+               docs.recursos.splice(data,1);
+              
+              }
+          }
+
+          console.log(docs)
+
+          Subcategoria.findByIdAndUpdate({_id : ids}, docs,
+          function (error, docs) {
+            if (error) {
+                res.send({status: 200, nU: "Se produjo un error al momento de borrar el recurso ..."});
+            }
+            res.send({status: 200, nU: "Recursos borrado con exito ..."});
+
+           
+        });
+    }
+    )}
+
+}
+
+
+
 
 exports.Controller = new Controller;
